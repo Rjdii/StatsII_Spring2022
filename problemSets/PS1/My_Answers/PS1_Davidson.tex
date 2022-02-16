@@ -1,0 +1,194 @@
+\documentclass[12pt,letterpaper]{article}
+\usepackage{graphicx,textcomp}
+\usepackage{natbib}
+\usepackage{setspace}
+\usepackage{fullpage}
+\usepackage{color}
+\usepackage[reqno]{amsmath}
+\usepackage{amsthm}
+\usepackage{fancyvrb}
+\usepackage{amssymb,enumerate}
+\usepackage[all]{xy}
+\usepackage{endnotes}
+\usepackage{lscape}
+\newtheorem{com}{Comment}
+\usepackage{float}
+\usepackage{hyperref}
+\newtheorem{lem} {Lemma}
+\newtheorem{prop}{Proposition}
+\newtheorem{thm}{Theorem}
+\newtheorem{defn}{Definition}
+\newtheorem{cor}{Corollary}
+\newtheorem{obs}{Observation}
+\usepackage[compact]{titlesec}
+\usepackage{dcolumn}
+\usepackage{tikz}
+\usetikzlibrary{arrows}
+\usepackage{multirow}
+\usepackage{xcolor}
+\newcolumntype{.}{D{.}{.}{-1}}
+\newcolumntype{d}[1]{D{.}{.}{#1}}
+\definecolor{light-gray}{gray}{0.65}
+\usepackage{url}
+\usepackage{listings}
+\usepackage{color}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+	backgroundcolor=\color{backcolour},   
+	commentstyle=\color{codegreen},
+	keywordstyle=\color{magenta},
+	numberstyle=\tiny\color{codegray},
+	stringstyle=\color{codepurple},
+	basicstyle=\footnotesize,
+	breakatwhitespace=false,         
+	breaklines=true,                 
+	captionpos=b,                    
+	keepspaces=true,                 
+	numbers=left,                    
+	numbersep=5pt,                  
+	showspaces=false,                
+	showstringspaces=false,
+	showtabs=false,                  
+	tabsize=2
+}
+\lstset{style=mystyle}
+\newcommand{\Sref}[1]{Section~\ref{#1}}
+\newtheorem{hyp}{Hypothesis}
+
+\title{Problem Set 1}
+\date{Due: February 14, 2022}
+\author{Applied Stats II}
+
+
+\begin{document}
+	\maketitle
+	\section*{Instructions}
+	\begin{itemize}
+		\item Please show your work! You may lose points by simply writing in the answer. If the problem requires you to execute commands in \texttt{R}, please include the code you used to get your answers. Please also include the \texttt{.R} file that contains your code. If you are not sure if work needs to be shown for a particular problem, please ask.
+		\item Your homework should be submitted electronically on GitHub in \texttt{.pdf} form.
+		\item This problem set is due before class on Monday February 14, 2022. No late assignments will be accepted.
+		\item Total available points for this homework is 80.
+	\end{itemize}
+
+	
+	%	\vspace{.25cm}
+	
+%\noindent In this problem set, you will run several regressions and create an add variable plot (see the lecture slides) in \texttt{R} using the \texttt{incumbents\_subset.csv} dataset. Include all of your code.
+
+	\vspace{.25cm}
+\section*{Question 1} %(20 points)}
+\vspace{.25cm}
+\noindent The Kolmogorov-Smirnov test uses cumulative distribution statistics test the similarity of the empirical distribution of some observed data and a specified PDF, and serves as a goodness of fit test. The test statistic is created by:
+
+$$D = \max_{i=1:n} \Big\{ \frac{i}{n}  - F_{(i)}, F_{(i)} - \frac{i-1}{n} \Big\}$$
+
+\noindent where $F$ is the theoretical cumulative distribution of the distribution being tested and $F_{(i)}$ is the $i$th ordered value. Intuitively, the statistic takes the largest absolute difference between the two distribution functions across all $x$ values. Large values indicate dissimilarity and the rejection of the hypothesis that the empirical distribution matches the queried theoretical distribution. The p-value is calculated from the Kolmogorov-
+Smirnoff CDF:
+
+$$p(D \leq x) \frac{\sqrt {2\pi}}{x} \sum _{k=1}^{\infty }e^{-(2k-1)^{2}\pi ^{2}/(8x^{2})}$$
+
+
+\noindent which generally requires approximation methods (see \href{https://core.ac.uk/download/pdf/25787785.pdf}{Marsaglia, Tsang, and Wang 2003}). This so-called non-parametric test (this label comes from the fact that the distribution of the test statistic does not depend on the distribution of the data being tested) performs poorly in small samples, but works well in a simulation environment. Write an \texttt{R} function that implements this test where the reference distribution is normal. Using \texttt{R} generate 1,000 Cauchy random variables (\texttt{rcauchy(1000, location = 0, scale = 1)}) and perform the test (remember, use the same seed, something like \texttt{set.seed(123)}, whenever you're generating your own data).\\
+	
+	
+\noindent As a hint, you can create the empirical distribution and theoretical CDF using this code:
+
+\begin{lstlisting}[language=R]
+	# create empirical distribution of observed data
+	ECDF <- ecdf(data)
+	empiricalCDF <- ECDF(data)
+	# generate test statistic
+	D <- max(abs(empiricalCDF - pnorm(data))) \end{lstlisting}
+
+
+
+\vspace{3in}
+
+\begin{lstlisting}[language=R]
+## Q1
+
+###Notes###
+
+stuff <- (rcauchy(1000, location = 0, scale = 1))
+stuff
+sort(stuff)
+
+as.data.frame(stuff)
+
+x_sort <- sort(stuff)
+x_tb <- table(x_sort)
+fr_df <- as.data.frame(x_tb)
+fr_df$cf <- cumsum(fr_df$Freq)
+fr_df$fsx <- with(fr_df,cf/sum(Freq))
+
+mx <- mean(stuff)
+sdx <- sd(stuff)
+
+fr_df$Zscore <- (x_sort-mean(x_sort))/sd(x_sort)
+
+fr_df$ftx <- pnorm(q=fr_df$Zscore)
+
+fr_df$Dvals <- (fr_df$fsx - fr_df$ftx)
+
+D <- max(fr_df$Dvals)
+
+alpha = 0.05
+qntl(Dcrit_MC, D, 1-alpha)
+print(Dcrit_MC)
+
+ecdf(x_sort)
+
+####Defining The Function####
+
+ks <- function(x) {
+	
+	#Arranging the data
+	x_sort <- sort(x)
+	x_tb <- table(x_sort)
+	fr_df <- as.data.frame(x_tb)
+	fr_df$cf <- cumsum(fr_df$Freq)
+	fr_df$fsx <- with(fr_df,cf/sum(Freq))
+	
+	#Getting Z scores
+	fr_df$Zscore <- (x_sort-mean(x_sort))/sd(x_sort)
+	
+	#Getting P values
+	fr_df$Pvalue <- pnorm(q=fr_df$Zscore)
+	
+	#Finding D
+	
+	fr_df$Dvals <- (fr_df$fsx - fr_df$ftx)
+	
+	D <- max(fr_df$Dvals)
+}
+
+#I really couldn't understand the second equation in the homework, so this is 
+#as far as I got with the function.
+
+\end{lstlisting}
+
+\section*{Question 2}% (20 points)}
+\noindent Estimate an OLS regression in \texttt{R} that uses the Newton-Raphson algorithm (specifically \texttt{BFGS}, which is a quasi-Newton method), and show that you get the equivalent results to using \texttt{lm}. Use the code below to create your data.
+\vspace{.5cm}
+\lstinputlisting[language=R, firstline=40,lastline=42]{PS1.R} 
+
+\begin{lstlisting}[language=R]
+## Q2
+
+
+	
+set.seed(123)
+data <- data.frame( x = runif (200 , 1 , 10) )
+data$y <- 0 + 2.75*data$x + rnorm(200 , 0 , 1.5 )
+
+##I'm a bit lost on this one, too. 
+
+	
+\end{lstlisting}
+
+\end{document}
